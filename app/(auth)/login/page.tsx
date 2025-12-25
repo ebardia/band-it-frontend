@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { authAPI } from '@/lib/api';
 import { useAuthStore } from '@/lib/authStore';
 
@@ -39,20 +40,29 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 px-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
-            BAND IT POWER
-          </h1>
-          <p className="text-gray-600">The Social Network for Collective Action</p>
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="max-w-md w-full bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl p-5 border-2 border-brass">
+        {/* Logo + Tagline */}
+        <div className="text-center mb-4">
+          <Image
+            src="/assets/logo.png"
+            alt="BAND IT"
+            width={320}
+            height={85}
+            className="mx-auto"
+            priority
+          />
+          <p className="font-display font-bold text-3xl tracking-wide -mt-14" style={{
+            color: '#A00000',
+            textShadow: '0 0 10px rgba(160, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3)'
+          }}>
+            Collective Power
+          </p>
         </div>
-
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-3">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="email" className="block text-xs font-semibold text-brown mb-1">
               Email
             </label>
             <input
@@ -61,13 +71,13 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+              className="w-full px-3 py-2 text-sm border-2 border-warm-gray/30 rounded-lg focus:ring-2 focus:ring-brass focus:border-brass outline-none transition bg-cream/50"
               placeholder="you@example.com"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="password" className="block text-xs font-semibold text-brown mb-1">
               Password
             </label>
             <input
@@ -76,13 +86,13 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition"
+              className="w-full px-3 py-2 text-sm border-2 border-warm-gray/30 rounded-lg focus:ring-2 focus:ring-brass focus:border-brass outline-none transition bg-cream/50"
               placeholder="••••••••"
             />
           </div>
 
           {error && (
-            <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg text-sm">
+            <div className="bg-red-50 border-2 border-red-300 text-red-700 px-3 py-2 rounded-lg text-xs font-medium">
               {error}
             </div>
           )}
@@ -90,29 +100,24 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-indigo-600 text-white py-3 rounded-lg font-semibold hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+            className="w-full bg-gradient-to-r from-rust to-brass text-white py-2 rounded-lg font-bold text-sm hover:shadow-xl disabled:opacity-50 transition-all"
           >
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 
-        {/* Footer Links */}
-        <div className="mt-6 text-center space-y-2">
-          <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
-            <Link href="/register" className="text-indigo-600 hover:text-indigo-700 font-medium">
-              Sign up
-            </Link>
+        {/* Links */}
+        <div className="mt-3 text-center text-xs space-y-1">
+          <p className="text-warm-gray">
+            <Link href="/register" className="text-rust hover:text-brass font-semibold">Sign up</Link>
+            {' • '}
+            <Link href="/forgot-password" className="text-warm-gray hover:text-brown">Forgot password?</Link>
           </p>
-          <Link href="/forgot-password" className="block text-sm text-gray-500 hover:text-gray-700">
-            Forgot password?
-          </Link>
         </div>
 
-        {/* Test Accounts */}
-        <div className="mt-8 pt-6 border-t border-gray-200">
-          <p className="text-xs text-gray-500 text-center mb-2">Test Accounts:</p>
-          <div className="text-xs text-gray-600 space-y-1">
+        {/* Test Accounts - Compact */}
+        <div className="mt-3 pt-3 border-t border-brass/30">
+          <div className="text-xs text-brown bg-cream/50 p-2 rounded space-y-0.5">
             <p>📧 bob@test.com / testpass123</p>
             <p>📧 sarah@test.com / testpass123</p>
           </div>
