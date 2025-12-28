@@ -4,32 +4,32 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/lib/authStore';
-import { projectsAPI, tasksAPI, organizationsAPI } from '@/lib/api';
+import { projectsAPI, tasksAPI, bandsAPI } from '@/lib/api';
 
 export default function ProjectDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const orgId = params.id as string;
+  const bandId = params.id as string;
   const projectId = params.project_id as string;
   const { user } = useAuthStore();
   
   const [project, setProject] = useState<any>(null);
-  const [org, setOrg] = useState<any>(null);
+  const [band, setBand] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadData();
-  }, [orgId, projectId]);
+  }, [bandId, projectId]);
 
   const loadData = async () => {
     try {
-      const [projectResponse, orgResponse] = await Promise.all([
-        projectsAPI.getProject(orgId, projectId),
-        organizationsAPI.getOrg(orgId),
+      const [projectResponse, bandResponse] = await Promise.all([
+        projectsAPI.getProject(bandId, projectId),
+        bandsAPI.getBand(bandId),
       ]);
       
       setProject(projectResponse.data.project);
-      setOrg(orgResponse.data.organization);
+      setBand(bandResponse.data.Band);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -39,7 +39,7 @@ export default function ProjectDetailPage() {
 
   const handleCompleteTask = async (taskId: string) => {
     try {
-      await tasksAPI.complete(orgId, projectId, taskId);
+      await tasksAPI.complete(bandId, projectId, taskId);
       await loadData();
     } catch (error) {
       console.error('Failed to complete task:', error);
@@ -48,7 +48,7 @@ export default function ProjectDetailPage() {
 
   const handleUpdateTaskStatus = async (taskId: string, status: string) => {
     try {
-      await tasksAPI.update(orgId, projectId, taskId, { status });
+      await tasksAPI.update(bandId, projectId, taskId, { status });
       await loadData();
     } catch (error) {
       console.error('Failed to update task:', error);
@@ -61,8 +61,8 @@ export default function ProjectDetailPage() {
     }
 
     try {
-      await projectsAPI.delete(orgId, projectId);
-      router.push(`/organizations/${orgId}?tab=projects`);
+      await projectsAPI.delete(bandId, projectId);
+      router.push(`/bands/${bandId}?tab=projects`);
     } catch (error) {
       console.error('Failed to delete project:', error);
       alert('Failed to delete project');
@@ -75,7 +75,7 @@ export default function ProjectDetailPage() {
     }
 
     try {
-      await tasksAPI.delete(orgId, projectId, taskId);
+      await tasksAPI.delete(bandId, projectId, taskId);
       await loadData();
     } catch (error) {
       console.error('Failed to delete task:', error);
@@ -142,29 +142,12 @@ export default function ProjectDetailPage() {
       {/* Header */}
       <header className="bg-white shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          {/* Breadcrumbs */}
-          <div className="flex items-center gap-2 text-sm mb-2">
-            <Link href="/organizations" className="text-indigo-600 hover:text-indigo-700">
-              Organizations
-            </Link>
-            <span className="text-gray-400">/</span>
-            <Link href={`/organizations/${orgId}?tab=proposals`} className="text-indigo-600 hover:text-indigo-700">
-              {org?.name || 'Organization'}
-            </Link>
-            <span className="text-gray-400">/</span>
-            <Link href={`/organizations/${orgId}?tab=proposals`} className="text-indigo-600 hover:text-indigo-700">
-              Proposals
-            </Link>
-            <span className="text-gray-400">/</span>
-            <Link 
-              href={`/organizations/${orgId}/proposals/${project?.proposalId}`} 
-              className="text-indigo-600 hover:text-indigo-700"
-            >
-              {project?.proposal?.title || 'Proposal'}
-            </Link>
-            <span className="text-gray-400">/</span>
-            <span className="text-gray-600">{project?.name || 'Project'}</span>
-          </div>
+          <Link 
+            href={`/bands/${bandId}/proposals/${project?.proposalId}`} 
+            className="text-sm text-indigo-600 hover:text-indigo-700 mb-2 inline-block"
+          >
+            ← Back to Proposal
+          </Link>
           
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -179,7 +162,7 @@ export default function ProjectDetailPage() {
                 {project.status.replace('_', ' ').toUpperCase()}
               </span>
               <Link
-                href={`/organizations/${orgId}/projects/${projectId}/edit`}
+                href={`/bands/${bandId}/projects/${projectId}/edit`}
                 className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 text-sm"
               >
                 ✏️ Edit
@@ -191,7 +174,7 @@ export default function ProjectDetailPage() {
                 🗑️ Delete
               </button>
               <Link
-                href={`/organizations/${orgId}/projects/${projectId}/tasks/new`}
+                href={`/bands/${bandId}/projects/${projectId}/tasks/new`}
                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
               >
                 + Add Task
@@ -228,7 +211,7 @@ export default function ProjectDetailPage() {
             <h3 className="text-lg font-medium text-gray-900 mb-2">No tasks yet</h3>
             <p className="text-gray-600 mb-6">Break down this project into tasks</p>
             <Link
-              href={`/organizations/${orgId}/projects/${projectId}/tasks/new`}
+              href={`/bands/${bandId}/projects/${projectId}/tasks/new`}
               className="inline-block px-6 py-3 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
             >
               Add First Task
@@ -269,7 +252,7 @@ export default function ProjectDetailPage() {
                     Start Task
                   </button>
                   <Link
-                    href={`/organizations/${orgId}/projects/${projectId}/tasks/${task.id}/edit`}
+                    href={`/bands/${bandId}/projects/${projectId}/tasks/${task.id}/edit`}
                     className="w-full mt-1 px-3 py-1 text-sm bg-gray-50 text-gray-700 rounded hover:bg-gray-100 block text-center"
                   >
                     Edit
@@ -317,7 +300,7 @@ export default function ProjectDetailPage() {
                     Mark Complete
                   </button>
                   <Link
-                    href={`/organizations/${orgId}/projects/${projectId}/tasks/${task.id}/edit`}
+                    href={`/bands/${bandId}/projects/${projectId}/tasks/${task.id}/edit`}
                     className="w-full mt-1 px-3 py-1 text-sm bg-gray-50 text-gray-700 rounded hover:bg-gray-100 block text-center"
                   >
                     Edit
@@ -360,7 +343,7 @@ export default function ProjectDetailPage() {
                     Unblock
                   </button>
                   <Link
-                    href={`/organizations/${orgId}/projects/${projectId}/tasks/${task.id}/edit`}
+                    href={`/bands/${bandId}/projects/${projectId}/tasks/${task.id}/edit`}
                     className="w-full mt-1 px-3 py-1 text-sm bg-gray-50 text-gray-700 rounded hover:bg-gray-100 block text-center"
                   >
                     Edit
@@ -397,7 +380,7 @@ export default function ProjectDetailPage() {
                     </p>
                   )}
                   <Link
-                    href={`/organizations/${orgId}/projects/${projectId}/tasks/${task.id}/edit`}
+                    href={`/bands/${bandId}/projects/${projectId}/tasks/${task.id}/edit`}
                     className="w-full mt-1 px-3 py-1 text-sm bg-gray-50 text-gray-700 rounded hover:bg-gray-100 block text-center"
                   >
                     Edit

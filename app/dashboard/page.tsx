@@ -164,14 +164,14 @@ export default function DashboardPage() {
           <div className="mt-8 pt-8 border-t border-gray-200">
             <h4 className="text-sm font-semibold text-gray-700 mb-4">Quick Links</h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Link href="/organizations" className="p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition cursor-pointer">
-                <p className="font-medium text-gray-900 mb-1">🏢 Organizations</p>
-                <p className="text-sm text-gray-600">View and manage groups</p>
+              <Link href="/bands" className="p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition cursor-pointer">
+                <p className="font-medium text-gray-900 mb-1">🏢 Bands</p>
+                <p className="text-sm text-gray-600">View and manage bands</p>
               </Link>
-              <div className="p-4 bg-gray-50 rounded-lg">
+              <Link href="/proposals" className="p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition cursor-pointer">
                 <p className="font-medium text-gray-900 mb-1">📝 Proposals</p>
-                <p className="text-sm text-gray-600">Coming soon</p>
-              </div>
+                <p className="text-sm text-gray-600">View all your proposals</p>
+              </Link>
               <div className="p-4 bg-gray-50 rounded-lg">
                 <p className="font-medium text-gray-900 mb-1">🔍 Discover</p>
                 <p className="text-sm text-gray-600">Coming soon</p>

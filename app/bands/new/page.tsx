@@ -3,9 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { organizationsAPI } from '@/lib/api';
+import { bandsAPI } from '@/lib/api';
 
-export default function NewOrganizationPage() {
+export default function NewBandanizationPage() {
   const router = useRouter();
   
   const [name, setName] = useState('');
@@ -50,7 +50,7 @@ export default function NewOrganizationPage() {
     setLoading(true);
 
     try {
-      const response = await organizationsAPI.create({
+      const response = await bandsAPI.create({
         name,
         slug,
         description,
@@ -64,10 +64,10 @@ export default function NewOrganizationPage() {
       });
 
       if (response.success) {
-        router.push(`/organizations/${response.data.organization.id}`);
+        router.push(`/bands/${response.data.band.id}`);
       }
     } catch (err: any) {
-      setError(err.response?.data?.error?.message || 'Failed to create organization');
+      setError(err.response?.data?.error?.message || 'Failed to create band');
     } finally {
       setLoading(false);
     }
@@ -78,7 +78,7 @@ export default function NewOrganizationPage() {
       {/* Header */}
       <header className="bg-white shadow">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h1 className="text-2xl font-bold text-gray-900">Create Organization</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Create band</h1>
           <p className="text-sm text-gray-600">Start a new collective</p>
         </div>
       </header>
@@ -89,7 +89,7 @@ export default function NewOrganizationPage() {
           {/* Basic Info */}
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-              Organization Name *
+              band Name *
             </label>
             <input
               id="name"
@@ -116,7 +116,7 @@ export default function NewOrganizationPage() {
               placeholder="band-it-dev"
             />
             <p className="text-xs text-gray-500 mt-1">
-              URL: bandit.com/organizations/{slug || 'your-slug'}
+              URL: bandit.com/bands/{slug || 'your-slug'}
             </p>
           </div>
 
@@ -145,7 +145,7 @@ export default function NewOrganizationPage() {
               onChange={(e) => setDescription(e.target.value)}
               rows={4}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none"
-              placeholder="Detailed description of your organization..."
+              placeholder="Detailed description of your band..."
             />
           </div>
 
@@ -269,7 +269,7 @@ export default function NewOrganizationPage() {
                 className="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
               />
               <span className="text-sm font-medium text-gray-700">
-                Make this organization public (visible in directory)
+                Make this band public (visible in directory)
               </span>
             </label>
           </div>
@@ -283,7 +283,7 @@ export default function NewOrganizationPage() {
           {/* Actions */}
           <div className="flex gap-4 pt-6">
             <Link
-              href="/organizations"
+              href="/bands"
               className="flex-1 px-4 py-3 text-center border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
             >
               Cancel
@@ -293,7 +293,7 @@ export default function NewOrganizationPage() {
               disabled={loading}
               className="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400"
             >
-              {loading ? 'Creating...' : 'Create Organization'}
+              {loading ? 'Creating...' : 'Create band'}
             </button>
           </div>
         </form>

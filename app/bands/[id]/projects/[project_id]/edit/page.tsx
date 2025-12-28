@@ -3,63 +3,69 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { proposalsAPI, projectsAPI } from '@/lib/api';
+import { projectsAPI } from '@/lib/api';
 
-export default function CreateProjectPage() {
+export default function EditProjectPage() {
   const router = useRouter();
   const params = useParams();
-  const orgId = params.id as string;
-  const proposalId = params.proposal_id as string;
+  const bandId = params.id as string;
+  const projectId = params.project_id as string;
   
-  const [proposal, setProposal] = useState<any>(null);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [status, setStatus] = useState('planning');
   const [startDate, setStartDate] = useState('');
   const [targetDate, setTargetDate] = useState('');
   
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    loadProposal();
-  }, [orgId, proposalId]);
+    loadProject();
+  }, [bandId, projectId]);
 
-  const loadProposal = async () => {
+  const loadProject = async () => {
     try {
-      const response = await proposalsAPI.getProposal(orgId, proposalId);
-      setProposal(response.data.proposal);
-      setName(`${response.data.proposal.title} - Implementation`);
-      setDescription(response.data.proposal.description);
+      const response = await projectsAPI.getProject(bandId, projectId);
+      const project = response.data.project;
+      
+      setName(project.name);
+      setDescription(project.description || '');
+      setStatus(project.status);
+      setStartDate(project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : '');
+      setTargetDate(project.targetDate ? new Date(project.targetDate).toISOString().split('T')[0] : '');
     } catch (error) {
-      console.error('Failed to load proposal:', error);
+      console.error('Failed to load project:', error);
+      setError('Failed to load project');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
+    setSaving(true);
 
     try {
-      const response = await projectsAPI.create(orgId, {
-        proposalId,
+      await projectsAPI.update(bandId, projectId, {
         name,
         description,
+        status,
         startDate: startDate || undefined,
         targetDate: targetDate || undefined,
       });
 
-      if (response.success) {
-        router.push(`/organizations/${orgId}/projects/${response.data.project.id}`);
-      }
+      router.push(`/bands/${bandId}/projects/${projectId}`);
     } catch (err: any) {
-      setError(err.response?.data?.error?.message || 'Failed to create project');
+      setError(err.response?.data?.error?.message || 'Failed to update project');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  if (!proposal) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-gray-600">Loading...</div>
@@ -72,8 +78,8 @@ export default function CreateProjectPage() {
       {/* Header */}
       <header className="bg-white shadow">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <h1 className="text-2xl font-bold text-gray-900">Create Project</h1>
-          <p className="text-sm text-gray-600">From: {proposal.title}</p>
+          <h1 className="text-2xl font-bold text-gray-900">Edit Project</h1>
+          <p className="text-sm text-gray-600">Update project details</p>
         </div>
       </header>
 
@@ -105,6 +111,24 @@ export default function CreateProjectPage() {
               rows={4}
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none"
             />
+          </div>
+
+          <div>
+            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+              Status
+            </label>
+            <select
+              id="status"
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+            >
+              <option value="planning">Planning</option>
+              <option value="active">Active</option>
+              <option value="on_hold">On Hold</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -143,17 +167,17 @@ export default function CreateProjectPage() {
 
           <div className="flex gap-4 pt-6">
             <Link
-              href={`/organizations/${orgId}/proposals/${proposalId}`}
+              href={`/bands/${bandId}/projects/${projectId}`}
               className="flex-1 px-4 py-3 text-center border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
             >
               Cancel
             </Link>
             <button
               type="submit"
-              disabled={loading}
+              disabled={saving}
               className="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400"
             >
-              {loading ? 'Creating...' : 'Create Project'}
+              {saving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </form>

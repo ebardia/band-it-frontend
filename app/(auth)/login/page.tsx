@@ -111,7 +111,7 @@ export default function LoginPage() {
           <p className="text-warm-gray">
             <Link href="/register" className="text-rust hover:text-brass font-semibold">Sign up</Link>
             {' • '}
-            <Link href="/forgot-password" className="text-warm-gray hover:text-brown">Forgot password?</Link>
+            <Link href="/fbandot-password" className="text-warm-gray hover:text-brown">Fbandot password?</Link>
           </p>
         </div>
 

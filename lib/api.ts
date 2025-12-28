@@ -48,8 +48,8 @@ export const authAPI = {
     return response.data;
   },
 
-  forgotPassword: async (email: string) => {
-    const response = await api.post('/api/auth/forgot-password', { email });
+  fbandotPassword: async (email: string) => {
+    const response = await api.post('/api/auth/fbandot-password', { email });
     return response.data;
   },
 
@@ -59,8 +59,8 @@ export const authAPI = {
   },
 };
 
-// Organizations API
-export const organizationsAPI = {
+// Bandanizations API
+export const bandsAPI = {
   create: async (data: {
     name: string;
     slug: string;
@@ -73,24 +73,36 @@ export const organizationsAPI = {
     shortDescription?: string;
     tags?: string[];
   }) => {
-    const response = await api.post('/api/organizations', data);
+    const response = await api.post('/api/bands', data);
     return response.data;
   },
 
-  getUserOrgs: async () => {
-    const response = await api.get('/api/organizations/my-organizations');
+  getUserBands: async () => {
+    const response = await api.get('/api/bands/my-bands');
     return response.data;
   },
 
-  getOrg: async (orgId: string) => {
-    const response = await api.get(`/api/organizations/${orgId}`);
+  getBand: async (bandId: string) => {
+    const response = await api.get(`/api/bands/${bandId}`);
+    return response.data;
+  },
+
+  updateProfile: async (bandId: string, data: {
+    tagline?: string;
+    fullDescription?: string;
+    coreValues?: any;
+    decisionGuidelines?: string;
+    inclusionStatement?: string;
+    membershipPolicy?: string;
+  }) => {
+    const response = await api.put(`/api/bands/${bandId}/profile`, data);
     return response.data;
   },
 };
 
 // Proposals API
 export const proposalsAPI = {
-  create: async (orgId: string, data: {
+  create: async (bandId: string, data: {
     title: string;
     objective: string;
     description: string;
@@ -100,125 +112,125 @@ export const proposalsAPI = {
     budgetBreakdown?: any;
     votingPeriodHours?: number;
   }) => {
-    const response = await api.post(`/api/organizations/${orgId}/proposals`, data);
+    const response = await api.post(`/api/bands/${bandId}/proposals`, data);
     return response.data;
   },
 
-  getProposals: async (orgId: string, state?: string) => {
+  getProposals: async (bandId: string, state?: string) => {
     const url = state 
-      ? `/api/organizations/${orgId}/proposals?state=${state}`
-      : `/api/organizations/${orgId}/proposals`;
+      ? `/api/bands/${bandId}/proposals?state=${state}`
+      : `/api/bands/${bandId}/proposals`;
     const response = await api.get(url);
     return response.data;
   },
 
-  getProposal: async (orgId: string, proposalId: string) => {
-    const response = await api.get(`/api/organizations/${orgId}/proposals/${proposalId}`);
+  getProposal: async (bandId: string, proposalId: string) => {
+    const response = await api.get(`/api/bands/${bandId}/proposals/${proposalId}`);
     return response.data;
   },
 
-  submit: async (orgId: string, proposalId: string) => {
-    const response = await api.post(`/api/organizations/${orgId}/proposals/${proposalId}/submit`);
+  submit: async (bandId: string, proposalId: string) => {
+    const response = await api.post(`/api/bands/${bandId}/proposals/${proposalId}/submit`);
     return response.data;
   },
 
-  review: async (orgId: string, proposalId: string, action: 'approve' | 'request_changes', feedback: string) => {
-    const response = await api.post(`/api/organizations/${orgId}/proposals/${proposalId}/review`, {
+  review: async (bandId: string, proposalId: string, action: 'approve' | 'request_changes', feedback: string) => {
+    const response = await api.post(`/api/bands/${bandId}/proposals/${proposalId}/review`, {
       action,
       feedback,
     });
     return response.data;
   },
 
-  vote: async (orgId: string, proposalId: string, vote: 'approve' | 'reject' | 'abstain', comment?: string) => {
-    const response = await api.post(`/api/organizations/${orgId}/proposals/${proposalId}/vote`, {
+  vote: async (bandId: string, proposalId: string, vote: 'approve' | 'reject' | 'abstain', comment?: string) => {
+    const response = await api.post(`/api/bands/${bandId}/proposals/${proposalId}/vote`, {
       vote,
       comment,
     });
     return response.data;
   },
 
-  finalize: async (orgId: string, proposalId: string) => {
-    const response = await api.post(`/api/organizations/${orgId}/proposals/${proposalId}/finalize`);
+  finalize: async (bandId: string, proposalId: string) => {
+    const response = await api.post(`/api/bands/${bandId}/proposals/${proposalId}/finalize`);
     return response.data;
   },
 };
 
 // Projects API
 export const projectsAPI = {
-  create: async (orgId: string, data: {
+  create: async (bandId: string, data: {
     proposalId: string;
     name: string;
     description?: string;
     startDate?: string;
     targetDate?: string;
   }) => {
-    const response = await api.post(`/api/organizations/${orgId}/projects`, data);
+    const response = await api.post(`/api/bands/${bandId}/projects`, data);
     return response.data;
   },
 
-  getProjects: async (orgId: string, status?: string) => {
+  getProjects: async (bandId: string, status?: string) => {
     const url = status 
-      ? `/api/organizations/${orgId}/projects?status=${status}`
-      : `/api/organizations/${orgId}/projects`;
+      ? `/api/bands/${bandId}/projects?status=${status}`
+      : `/api/bands/${bandId}/projects`;
     const response = await api.get(url);
     return response.data;
   },
 
-  getProject: async (orgId: string, projectId: string) => {
-    const response = await api.get(`/api/organizations/${orgId}/projects/${projectId}`);
+  getProject: async (bandId: string, projectId: string) => {
+    const response = await api.get(`/api/bands/${bandId}/projects/${projectId}`);
     return response.data;
   },
 
-  update: async (orgId: string, projectId: string, data: any) => {
-    const response = await api.put(`/api/organizations/${orgId}/projects/${projectId}`, data);
+  update: async (bandId: string, projectId: string, data: any) => {
+    const response = await api.put(`/api/bands/${bandId}/projects/${projectId}`, data);
     return response.data;
   },
 
-  delete: async (orgId: string, projectId: string) => {
-    const response = await api.delete(`/api/organizations/${orgId}/projects/${projectId}`);
+  delete: async (bandId: string, projectId: string) => {
+    const response = await api.delete(`/api/bands/${bandId}/projects/${projectId}`);
     return response.data;
   },
 };
 
 // Tasks API
 export const tasksAPI = {
-  create: async (orgId: string, projectId: string, data: {
+  create: async (bandId: string, projectId: string, data: {
     title: string;
     description?: string;
     priority?: string;
     assignedTo?: string;
     dueDate?: string;
   }) => {
-    const response = await api.post(`/api/organizations/${orgId}/projects/${projectId}/tasks`, data);
+    const response = await api.post(`/api/bands/${bandId}/projects/${projectId}/tasks`, data);
     return response.data;
   },
 
-  getTasks: async (orgId: string, projectId: string, status?: string) => {
+  getTasks: async (bandId: string, projectId: string, status?: string) => {
     const url = status 
-      ? `/api/organizations/${orgId}/projects/${projectId}/tasks?status=${status}`
-      : `/api/organizations/${orgId}/projects/${projectId}/tasks`;
+      ? `/api/bands/${bandId}/projects/${projectId}/tasks?status=${status}`
+      : `/api/bands/${bandId}/projects/${projectId}/tasks`;
     const response = await api.get(url);
     return response.data;
   },
 
-  getTask: async (orgId: string, projectId: string, taskId: string) => {
-    const response = await api.get(`/api/organizations/${orgId}/projects/${projectId}/tasks/${taskId}`);
+  getTask: async (bandId: string, projectId: string, taskId: string) => {
+    const response = await api.get(`/api/bands/${bandId}/projects/${projectId}/tasks/${taskId}`);
     return response.data;
   },
 
-  update: async (orgId: string, projectId: string, taskId: string, data: any) => {
-    const response = await api.put(`/api/organizations/${orgId}/projects/${projectId}/tasks/${taskId}`, data);
+  update: async (bandId: string, projectId: string, taskId: string, data: any) => {
+    const response = await api.put(`/api/bands/${bandId}/projects/${projectId}/tasks/${taskId}`, data);
     return response.data;
   },
 
-  complete: async (orgId: string, projectId: string, taskId: string) => {
-    const response = await api.post(`/api/organizations/${orgId}/projects/${projectId}/tasks/${taskId}/complete`);
+  complete: async (bandId: string, projectId: string, taskId: string) => {
+    const response = await api.post(`/api/bands/${bandId}/projects/${projectId}/tasks/${taskId}/complete`);
     return response.data;
   },
 
-  delete: async (orgId: string, projectId: string, taskId: string) => {
-    const response = await api.delete(`/api/organizations/${orgId}/projects/${projectId}/tasks/${taskId}`);
+  delete: async (bandId: string, projectId: string, taskId: string) => {
+    const response = await api.delete(`/api/bands/${bandId}/projects/${projectId}/tasks/${taskId}`);
     return response.data;
   },
 };
@@ -226,7 +238,7 @@ export const tasksAPI = {
 // Captain's Log API
 export const captainsLogAPI = {
   getLog: async (
-    orgId: string, 
+    bandId: string, 
     filters?: {
       entityType?: string;
       actorId?: string;
@@ -244,12 +256,92 @@ export const captainsLogAPI = {
     if (filters?.limit) params.append('limit', filters.limit.toString());
     if (filters?.offset) params.append('offset', filters.offset.toString());
     
-    const response = await api.get(`/api/organizations/${orgId}/captains-log?${params.toString()}`);
+    const response = await api.get(`/api/bands/${bandId}/captains-log?${params.toString()}`);
     return response.data;
   },
 
-  getEntry: async (orgId: string, entryId: string) => {
-    const response = await api.get(`/api/organizations/${orgId}/captains-log/${entryId}`);
+  getEntry: async (bandId: string, entryId: string) => {
+    const response = await api.get(`/api/bands/${bandId}/captains-log/${entryId}`);
+    return response.data;
+  },
+};
+
+// AI API
+export const aiAPI = {
+  generateProposal: async (idea: string, bandId: string, bandContext?: string) => {
+    const response = await api.post('/api/ai/generate-proposal', {
+      idea,
+      bandId,
+      bandContext,
+    });
+    return response.data;
+  },
+
+  getBandUsage: async (bandId: string, startDate?: string, endDate?: string) => {
+    const params = new URLSearchParams();
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    
+    const response = await api.get(`/api/ai/bands/${bandId}/usage?${params.toString()}`);
+    return response.data;
+  },
+
+  generateProfile: async (description: string, bandId: string) => {
+    const response = await api.post('/api/ai/generate-profile', {
+      description,
+      bandId,
+    });
+    return response.data;
+  },
+};
+
+// Upload API
+export const uploadAPI = {
+  uploadImage: async (bandId: string, file: File, title?: string, description?: string) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    if (title) formData.append('title', title);
+    if (description) formData.append('description', description);
+
+    const response = await api.post(`/api/bands/${bandId}/images`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  getBandImages: async (bandId: string) => {
+    const response = await api.get(`/api/bands/${bandId}/images`);
+    return response.data;
+  },
+
+  deleteImage: async (bandId: string, imageId: string) => {
+    const response = await api.delete(`/api/bands/${bandId}/images/${imageId}`);
+    return response.data;
+  },
+
+  uploadDocument: async (bandId: string, file: File, title: string, description?: string) => {
+    const formData = new FormData();
+    formData.append('document', file);
+    formData.append('title', title);
+    if (description) formData.append('description', description);
+
+    const response = await api.post(`/api/bands/${bandId}/documents`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  getBandDocuments: async (bandId: string) => {
+    const response = await api.get(`/api/bands/${bandId}/documents`);
+    return response.data;
+  },
+
+  deleteDocument: async (bandId: string, documentId: string) => {
+    const response = await api.delete(`/api/bands/${bandId}/documents/${documentId}`);
     return response.data;
   },
 };

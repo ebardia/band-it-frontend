@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { tasksAPI, organizationsAPI } from '@/lib/api';
+import { tasksAPI, bandsAPI } from '@/lib/api';
 
 export default function NewTaskPage() {
   const router = useRouter();
   const params = useParams();
-  const orgId = params.id as string;
+  const bandId = params.id as string;
   const projectId = params.project_id as string;
   
   const [title, setTitle] = useState('');
@@ -23,12 +23,12 @@ export default function NewTaskPage() {
 
   useEffect(() => {
     loadMembers();
-  }, [orgId]);
+  }, [bandId]);
 
   const loadMembers = async () => {
     try {
-      const response = await organizationsAPI.getOrg(orgId);
-      setMembers(response.data.organization.members);
+      const response = await bandsAPI.getBand(bandId);
+      setMembers(response.data.band.members);
     } catch (error) {
       console.error('Failed to load members:', error);
     }
@@ -40,7 +40,7 @@ export default function NewTaskPage() {
     setLoading(true);
 
     try {
-      const response = await tasksAPI.create(orgId, projectId, {
+      const response = await tasksAPI.create(bandId, projectId, {
         title,
         description,
         priority,
@@ -49,7 +49,7 @@ export default function NewTaskPage() {
       });
 
       if (response.success) {
-        router.push(`/organizations/${orgId}/projects/${projectId}`);
+        router.push(`/bands/${bandId}/projects/${projectId}`);
       }
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Failed to create task');
@@ -65,15 +65,15 @@ export default function NewTaskPage() {
           <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             {/* Breadcrumbs */}
             <div className="flex items-center gap-2 text-sm mb-3">
-              <Link href="/organizations" className="text-indigo-600 hover:text-indigo-700">
-                Organizations
+              <Link href="/bands" className="text-indigo-600 hover:text-indigo-700">
+                Bandanizations
               </Link>
               <span className="text-gray-400">/</span>
-              <Link href={`/organizations/${orgId}`} className="text-indigo-600 hover:text-indigo-700">
-                Organization
+              <Link href={`/bands/${bandId}`} className="text-indigo-600 hover:text-indigo-700">
+                band
               </Link>
               <span className="text-gray-400">/</span>
-              <Link href={`/organizations/${orgId}/projects/${projectId}`} className="text-indigo-600 hover:text-indigo-700">
+              <Link href={`/bands/${bandId}/projects/${projectId}`} className="text-indigo-600 hover:text-indigo-700">
                 Project
               </Link>
               <span className="text-gray-400">/</span>
@@ -176,7 +176,7 @@ export default function NewTaskPage() {
 
           <div className="flex gap-4 pt-6">
             <Link
-              href={`/organizations/${orgId}/projects/${projectId}`}
+              href={`/bands/${bandId}/projects/${projectId}`}
               className="flex-1 px-4 py-3 text-center border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
             >
               Cancel

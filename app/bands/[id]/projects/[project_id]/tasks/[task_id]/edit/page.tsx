@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
-import { tasksAPI, organizationsAPI } from '@/lib/api';
+import { tasksAPI, bandsAPI } from '@/lib/api';
 
 export default function EditTaskPage() {
   const router = useRouter();
   const params = useParams();
-  const orgId = params.id as string;
+  const bandId = params.id as string;
   const projectId = params.project_id as string;
   const taskId = params.task_id as string;
   
@@ -26,13 +26,13 @@ export default function EditTaskPage() {
 
   useEffect(() => {
     loadData();
-  }, [orgId, projectId, taskId]);
+  }, [bandId, projectId, taskId]);
 
   const loadData = async () => {
     try {
-      const [taskResponse, orgResponse] = await Promise.all([
-        tasksAPI.getTask(orgId, projectId, taskId),
-        organizationsAPI.getOrg(orgId),
+      const [taskResponse, bandResponse] = await Promise.all([
+        tasksAPI.getTask(bandId, projectId, taskId),
+        bandsAPI.getBand(bandId),
       ]);
       
       const task = taskResponse.data.task;
@@ -43,7 +43,7 @@ export default function EditTaskPage() {
       setAssignedTo(task.assignedTo || '');
       setDueDate(task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '');
       
-      setMembers(orgResponse.data.organization.members);
+      setMembers(bandResponse.data.band.members);
     } catch (error) {
       console.error('Failed to load task:', error);
       setError('Failed to load task');
@@ -58,7 +58,7 @@ export default function EditTaskPage() {
     setSaving(true);
 
     try {
-      await tasksAPI.update(orgId, projectId, taskId, {
+      await tasksAPI.update(bandId, projectId, taskId, {
         title,
         description,
         priority,
@@ -67,7 +67,7 @@ export default function EditTaskPage() {
         dueDate: dueDate || undefined,
       });
 
-      router.push(`/organizations/${orgId}/projects/${projectId}`);
+      router.push(`/bands/${bandId}/projects/${projectId}`);
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Failed to update task');
     } finally {
@@ -199,7 +199,7 @@ export default function EditTaskPage() {
 
           <div className="flex gap-4 pt-6">
             <Link
-              href={`/organizations/${orgId}/projects/${projectId}`}
+              href={`/bands/${bandId}/projects/${projectId}`}
               className="flex-1 px-4 py-3 text-center border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
             >
               Cancel

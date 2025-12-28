@@ -60,7 +60,7 @@ export default function HomePage() {
             maxWidth: '700px',
             color: '#4A4A4A'
           }}>
-            BAND IT is a decision-to-execution system for groups or organizations that want collective power with structure, transparency, and accountability.
+            BAND IT is a decision-to-execution system for groups or bands that want collective power with structure, transparency, and accountability.
           </p>
           
           <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>

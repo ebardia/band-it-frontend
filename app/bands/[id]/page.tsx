@@ -1,26 +1,33 @@
 'use client';
 
+import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/lib/authStore';
-import { organizationsAPI, proposalsAPI, projectsAPI, captainsLogAPI } from '@/lib/api';
-import { useSearchParams } from 'next/navigation';
+import { bandsAPI, proposalsAPI, projectsAPI, captainsLogAPI, aiAPI, uploadAPI } from '@/lib/api';
+import AboutTab from './components/AboutTab';
+import ImagesTab from './components/ImagesTab';
+import DocumentsTab from './components/DocumentsTab';
 
-export default function OrganizationDetailPage() {
+export default function BandDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const orgId = params.id as string;
+  const bandId = params.id as string;
   const { isAuthenticated } = useAuthStore();
   
-  const [org, setOrg] = useState<any>(null);
+  const [band, setBand] = useState<any>(null);
   const [proposals, setProposals] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
   const [captainsLog, setCaptainsLog] = useState<any[]>([]);
+  const [aiUsage, setAiUsage] = useState<any>(null);
+  const [images, setImages] = useState<any[]>([]);
+  const [documents, setDocuments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<'proposals' | 'members' | 'projects' | 'captains-log'>(
-    (searchParams.get('tab') as 'proposals' | 'members' | 'projects' | 'captains-log') || 'proposals'
+  const [activeTab, setActiveTab] = useState<'about' | 'proposals' | 'members' | 'projects' | 'captains-log' | 'images' | 'documents'>(
+    (searchParams.get('tab') as 'about' | 'proposals' | 'members' | 'projects' | 'captains-log' | 'images' | 'documents') || 'about'
   );
 
   useEffect(() => {
@@ -29,22 +36,32 @@ export default function OrganizationDetailPage() {
       return;
     }
 
-    loadData();
-  }, [isAuthenticated, router, orgId]);
+    if (bandId) {
+      loadData();
+    }
+  }, [isAuthenticated, router, bandId]);
 
   const loadData = async () => {
+    if (!bandId) return;
+    
     try {
-      const [orgResponse, proposalsResponse, projectsResponse, logResponse] = await Promise.all([
-        organizationsAPI.getOrg(orgId),
-        proposalsAPI.getProposals(orgId),
-        projectsAPI.getProjects(orgId),
-        captainsLogAPI.getLog(orgId, { limit: 50 }),
+      const [bandResponse, proposalsResponse, projectsResponse, logResponse, aiUsageResponse, imagesResponse, documentsResponse] = await Promise.all([
+        bandsAPI.getBand(bandId),
+        proposalsAPI.getProposals(bandId),
+        projectsAPI.getProjects(bandId),
+        captainsLogAPI.getLog(bandId, { limit: 50 }),
+        aiAPI.getBandUsage(bandId).catch(() => ({ data: { usage: null } })),
+        uploadAPI.getBandImages(bandId).catch(() => ({ data: { images: [] } })),
+        uploadAPI.getBandDocuments(bandId).catch(() => ({ data: { documents: [] } })),
       ]);
       
-      setOrg(orgResponse.data.organization);
+      setBand(bandResponse.data.Band);
       setProposals(proposalsResponse.data.proposals);
       setProjects(projectsResponse.data.projects);
       setCaptainsLog(logResponse.data.entries);
+      setAiUsage(aiUsageResponse.data?.usage);
+      setImages(imagesResponse.data?.images || []);
+      setDocuments(documentsResponse.data?.documents || []);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -70,7 +87,7 @@ export default function OrganizationDetailPage() {
       project: '🚀',
       task: '✓',
       member: '👤',
-      organization: '🏢',
+      band: '🏢',
     };
     return icons[entityType] || '📝';
   };
@@ -98,10 +115,10 @@ export default function OrganizationDetailPage() {
     );
   }
 
-  if (!org) {
+  if (!band) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-600">Organization not found</div>
+        <div className="text-gray-600">Band not found</div>
       </div>
     );
   }
@@ -113,69 +130,108 @@ export default function OrganizationDetailPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <Link
-                href="/organizations"
-                className="text-sm text-indigo-600 hover:text-indigo-700 mb-2 inline-block"
-              >
-                ← Back to Organizations
+              <Link href="/bands" className="text-sm text-indigo-600 hover:text-indigo-700 mb-2 inline-block">
+                ← Back to Bands
               </Link>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{org.name}</h1>
-              <p className="text-gray-600">{org.shortDescription || org.description}</p>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{band.name}</h1>
+              <p className="text-gray-600">{band.shortDescription || band.description}</p>
               <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
-                <span>📍 {org.city}, {org.stateProvince}</span>
-                <span>👥 {org.memberCount} members</span>
-                <span>💰 ${Number(org.treasuryBalance).toFixed(2)}</span>
+                <span>📍 {band.city}, {band.stateProvince}</span>
+                <span>👥 {band.memberCount} members</span>
+                <span>💰 ${Number(band.treasuryBalance).toFixed(2)}</span>
               </div>
             </div>
-            <Link
-              href={`/organizations/${orgId}/proposals/new`}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-            >
-              + New Proposal
-            </Link>
+            <div className="flex gap-3">
+              <Link href={`/bands/${bandId}/settings`} className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+                ⚙️ Settings
+              </Link>
+              <Link href={`/bands/${bandId}/proposals/new`} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                + New Proposal
+              </Link>
+            </div>
           </div>
+
+          {/* AI Usage Widget */}
+          {aiUsage && aiUsage.totals && aiUsage.totals.uses > 0 && (
+            <div className="mt-6 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-purple-900">🤖 AI Usage This Month</h3>
+                <span className="text-sm text-purple-600">
+                  {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                <div className="bg-white rounded-lg p-3 shadow-sm">
+                  <p className="text-xs text-gray-500 mb-1">Total Uses</p>
+                  <p className="text-2xl font-bold text-purple-900">{aiUsage.totals.uses}</p>
+                </div>
+                <div className="bg-white rounded-lg p-3 shadow-sm">
+                  <p className="text-xs text-gray-500 mb-1">Energy</p>
+                  <p className="text-2xl font-bold text-green-700">{aiUsage.totals.energyKwh.toFixed(4)}</p>
+                  <p className="text-xs text-gray-500">kWh</p>
+                </div>
+                <div className="bg-white rounded-lg p-3 shadow-sm">
+                  <p className="text-xs text-gray-500 mb-1">Water</p>
+                  <p className="text-2xl font-bold text-blue-700">{aiUsage.totals.waterLiters.toFixed(4)}</p>
+                  <p className="text-xs text-gray-500">liters</p>
+                </div>
+                <div className="bg-white rounded-lg p-3 shadow-sm">
+                  <p className="text-xs text-gray-500 mb-1">Carbon</p>
+                  <p className="text-2xl font-bold text-orange-700">{aiUsage.totals.carbonKg.toFixed(4)}</p>
+                  <p className="text-xs text-gray-500">kg CO₂</p>
+                </div>
+                <div className="bg-white rounded-lg p-3 shadow-sm">
+                  <p className="text-xs text-gray-500 mb-1">Cost</p>
+                  <p className="text-2xl font-bold text-indigo-900">${aiUsage.totals.cost.toFixed(2)}</p>
+                </div>
+              </div>
+
+              {Object.keys(aiUsage.byAgentType).length > 0 && (
+                <div className="bg-white rounded-lg p-4 shadow-sm">
+                  <p className="text-sm font-medium text-gray-700 mb-3">Usage by Agent Type</p>
+                  <div className="space-y-2">
+                    {Object.entries(aiUsage.byAgentType).map(([type, stats]: [string, any]) => (
+                      <div key={type} className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600 capitalize">{type.replace('_', ' ')}</span>
+                        <div className="flex items-center gap-4 text-gray-500">
+                          <span>{stats.count} uses</span>
+                          <span>${stats.cost.toFixed(3)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-purple-600 mt-4">
+                💡 This month's AI energy = running an LED bulb for {(aiUsage.totals.energyKwh * 100).toFixed(0)} hours
+              </p>
+            </div>
+          )}
 
           {/* Tabs */}
           <div className="flex gap-6 mt-6 border-b">
-            <button
-              onClick={() => setActiveTab('proposals')}
-              className={`pb-3 px-1 font-medium text-sm border-b-2 transition ${
-                activeTab === 'proposals'
-                  ? 'border-indigo-600 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
+            <button onClick={() => setActiveTab('about')} className={`pb-3 px-1 font-medium text-sm border-b-2 transition ${activeTab === 'about' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+              About
+            </button>
+            <button onClick={() => setActiveTab('proposals')} className={`pb-3 px-1 font-medium text-sm border-b-2 transition ${activeTab === 'proposals' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
               Proposals ({proposals.length})
             </button>
-            <button
-              onClick={() => setActiveTab('projects')}
-              className={`pb-3 px-1 font-medium text-sm border-b-2 transition ${
-                activeTab === 'projects'
-                  ? 'border-indigo-600 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Projects
+            <button onClick={() => setActiveTab('projects')} className={`pb-3 px-1 font-medium text-sm border-b-2 transition ${activeTab === 'projects' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+              Projects ({projects.length})
             </button>
-            <button
-              onClick={() => setActiveTab('members')}
-              className={`pb-3 px-1 font-medium text-sm border-b-2 transition ${
-                activeTab === 'members'
-                  ? 'border-indigo-600 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Members ({org.memberCount})
+            <button onClick={() => setActiveTab('members')} className={`pb-3 px-1 font-medium text-sm border-b-2 transition ${activeTab === 'members' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+              Members ({band.memberCount})
             </button>
-            <button
-              onClick={() => setActiveTab('captains-log')}
-              className={`pb-3 px-1 font-medium text-sm border-b-2 transition ${
-                activeTab === 'captains-log'
-                  ? 'border-indigo-600 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
+            <button onClick={() => setActiveTab('captains-log')} className={`pb-3 px-1 font-medium text-sm border-b-2 transition ${activeTab === 'captains-log' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
               Captain's Log ({captainsLog.length})
+            </button>
+            <button onClick={() => setActiveTab('images')} className={`pb-3 px-1 font-medium text-sm border-b-2 transition ${activeTab === 'images' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+              Images ({images.length})
+            </button>
+            <button onClick={() => setActiveTab('documents')} className={`pb-3 px-1 font-medium text-sm border-b-2 transition ${activeTab === 'documents' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+              Documents ({documents.length})
             </button>
           </div>
         </div>
@@ -183,16 +239,19 @@ export default function OrganizationDetailPage() {
 
       {/* Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {activeTab === 'about' && <AboutTab band={band} bandId={bandId} />}
+        
+        {activeTab === 'images' && <ImagesTab images={images} bandId={bandId} onReload={loadData} />}
+        
+        {activeTab === 'documents' && <DocumentsTab documents={documents} bandId={bandId} onReload={loadData} />}
+
         {activeTab === 'proposals' && (
           <div>
             {proposals.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-xl">
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No proposals yet</h3>
                 <p className="text-gray-600 mb-6">Create your first proposal to get started</p>
-                <Link
-                  href={`/organizations/${orgId}/proposals/new`}
-                  className="inline-block px-6 py-3 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700"
-                >
+                <Link href={`/bands/${bandId}/proposals/new`} className="inline-block px-6 py-3 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700">
                   Create Proposal
                 </Link>
               </div>
@@ -203,30 +262,16 @@ export default function OrganizationDetailPage() {
                   <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Title
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Creator
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Votes
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Created
-                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Creator</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Votes</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {proposals.map((proposal) => (
-                        <tr 
-                          key={proposal.id}
-                          onClick={() => router.push(`/organizations/${orgId}/proposals/${proposal.id}`)}
-                          className="hover:bg-gray-50 cursor-pointer transition"
-                        >
+                        <tr key={proposal.id} onClick={() => router.push(`/bands/${bandId}/proposals/${proposal.id}`)} className="hover:bg-gray-50 cursor-pointer transition">
                           <td className="px-6 py-4">
                             <div className="text-sm font-medium text-gray-900">{proposal.title}</div>
                             <div className="text-sm text-gray-500 line-clamp-1">{proposal.objective}</div>
@@ -275,30 +320,16 @@ export default function OrganizationDetailPage() {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Project Name
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Progress
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Tasks
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Target Date
-                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project Name</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tasks</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target Date</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {projects.map((project) => (
-                      <tr 
-                        key={project.id}
-                        onClick={() => router.push(`/organizations/${orgId}/projects/${project.id}`)}
-                        className="hover:bg-gray-50 cursor-pointer transition"
-                      >
+                      <tr key={project.id} onClick={() => router.push(`/bands/${bandId}/projects/${project.id}`)} className="hover:bg-gray-50 cursor-pointer transition">
                         <td className="px-6 py-4">
                           <div className="text-sm font-medium text-gray-900">{project.name}</div>
                           <div className="text-sm text-gray-500">From: {project.proposal.title}</div>
@@ -316,10 +347,7 @@ export default function OrganizationDetailPage() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="w-24 bg-gray-200 rounded-full h-2 mr-2">
-                              <div 
-                                className="bg-indigo-600 h-2 rounded-full" 
-                                style={{ width: `${project.progressPercentage}%` }}
-                              />
+                              <div className="bg-indigo-600 h-2 rounded-full" style={{ width: `${project.progressPercentage}%` }} />
                             </div>
                             <span className="text-sm text-gray-900 font-medium">{project.progressPercentage}%</span>
                           </div>
@@ -343,7 +371,7 @@ export default function OrganizationDetailPage() {
           <div className="bg-white rounded-xl p-6">
             <h3 className="text-lg font-semibold mb-4">Members</h3>
             <div className="space-y-3">
-              {org.members.map((member: any) => (
+              {band.members.map((member: any) => (
                 <div key={member.id} className="flex items-center justify-between py-3 border-b last:border-b-0">
                   <div>
                     <p className="font-medium text-gray-900">

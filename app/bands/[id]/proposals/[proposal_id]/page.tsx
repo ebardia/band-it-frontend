@@ -9,7 +9,7 @@ import { proposalsAPI, projectsAPI } from '@/lib/api';
 export default function ProposalDetailPage() {
   const router = useRouter();
   const params = useParams();
-  const orgId = params.id as string;
+  const bandId = params.id as string;
   const proposalId = params.proposal_id as string;
   const { user } = useAuthStore();
   
@@ -18,20 +18,26 @@ export default function ProposalDetailPage() {
   const [reviewing, setReviewing] = useState(false);
 
   const [proposal, setProposal] = useState<any>(null);
-  const [projects, setProjects] = useState<any[]>([]); // ADD THIS LINE
+  const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Don't try to load if we're on the "new" proposal page
+    if (proposalId === 'new') {
+      setLoading(false);
+      return;
+    }
+    
     loadProposal();
-  }, [orgId, proposalId]);
+  }, [bandId, proposalId]);
 
   const loadProposal = async () => {
   try {
-    const response = await proposalsAPI.getProposal(orgId, proposalId);
+    const response = await proposalsAPI.getProposal(bandId, proposalId);
     setProposal(response.data.proposal);
     
     // Load projects for this proposal
-    const projectsResponse = await projectsAPI.getProjects(orgId);
+    const projectsResponse = await projectsAPI.getProjects(bandId);
     const proposalProjects = projectsResponse.data.projects.filter(
       (p: any) => p.proposalId === proposalId
     );
@@ -46,7 +52,7 @@ export default function ProposalDetailPage() {
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      await proposalsAPI.submit(orgId, proposalId);
+      await proposalsAPI.submit(bandId, proposalId);
       await loadProposal();
     } catch (error) {
       console.error('Failed to submit:', error);
@@ -61,7 +67,7 @@ export default function ProposalDetailPage() {
 
     setReviewing(true);
     try {
-      await proposalsAPI.review(orgId, proposalId, action, feedback);
+      await proposalsAPI.review(bandId, proposalId, action, feedback);
       await loadProposal();
     } catch (error) {
       console.error('Failed to review:', error);
@@ -75,7 +81,7 @@ export default function ProposalDetailPage() {
     
     setVoting(true);
     try {
-      await proposalsAPI.vote(orgId, proposalId, vote, comment || undefined);
+      await proposalsAPI.vote(bandId, proposalId, vote, comment || undefined);
       await loadProposal();
     } catch (error) {
       console.error('Failed to vote:', error);
@@ -123,17 +129,12 @@ export default function ProposalDetailPage() {
       {/* Header */}
       <header className="bg-white shadow">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center gap-2 text-sm mb-2">
-            <Link href="/organizations" className="text-indigo-600 hover:text-indigo-700">
-              Organizations
-            </Link>
-            <span className="text-gray-400">/</span>
-            <Link href={`/organizations/${orgId}`} className="text-indigo-600 hover:text-indigo-700">
-              Organization
-            </Link>
-            <span className="text-gray-400">/</span>
-            <span className="text-gray-600">Proposals</span>
-          </div>
+          <Link 
+            href={`/bands/${bandId}`} 
+            className="text-sm text-indigo-600 hover:text-indigo-700 mb-2 inline-block"
+          >
+            ← Back to Band
+          </Link>
           
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -351,7 +352,7 @@ export default function ProposalDetailPage() {
                       {projects.map((project) => (
                         <Link
                           key={project.id}
-                          href={`/organizations/${orgId}/projects/${project.id}`}
+                          href={`/bands/${bandId}/projects/${project.id}`}
                           className="block p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
                         >
                           <div className="flex items-center justify-between mb-1">
@@ -374,7 +375,7 @@ export default function ProposalDetailPage() {
                 )}
                                       
                 <Link
-                  href={`/organizations/${orgId}/proposals/${proposalId}/create-project`}
+                  href={`/bands/${bandId}/proposals/${proposalId}/create-project`}
                   className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-center block"
                 >
                   ✓ Create Project
