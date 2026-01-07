@@ -154,8 +154,26 @@ export const proposalsAPI = {
     const response = await api.post(`/api/bands/${bandId}/proposals/${proposalId}/finalize`);
     return response.data;
   },
+
+  // Comment functions
+  getComments: (bandId: string, proposalId: string) => {
+    return api.get(`/api/bands/${bandId}/proposals/${proposalId}/comments`);
+  },
+
+  addComment: (bandId: string, proposalId: string, data: { body: string; parentCommentId?: string }) => {
+    return api.post(`/api/bands/${bandId}/proposals/${proposalId}/comments`, data);
+  },
+
+  updateComment: (bandId: string, proposalId: string, commentId: string, data: { body: string }) => {
+    return api.put(`/api/bands/${bandId}/proposals/${proposalId}/comments/${commentId}`, data);
+  },
+
+  deleteComment: (bandId: string, proposalId: string, commentId: string) => {
+    return api.delete(`/api/bands/${bandId}/proposals/${proposalId}/comments/${commentId}`);
+  },
 };
 
+// Projects API
 // Projects API
 export const projectsAPI = {
   create: async (bandId: string, data: {
@@ -191,8 +209,26 @@ export const projectsAPI = {
     const response = await api.delete(`/api/bands/${bandId}/projects/${projectId}`);
     return response.data;
   },
+
+  // Comment functions
+  getComments: (bandId: string, projectId: string) => {
+    return api.get(`/api/bands/${bandId}/projects/${projectId}/comments`);
+  },
+
+  addComment: (bandId: string, projectId: string, data: { body: string; parentCommentId?: string }) => {
+    return api.post(`/api/bands/${bandId}/projects/${projectId}/comments`, data);
+  },
+
+  updateComment: (bandId: string, projectId: string, commentId: string, data: { body: string }) => {
+    return api.put(`/api/bands/${bandId}/projects/${projectId}/comments/${commentId}`, data);
+  },
+
+  deleteComment: (bandId: string, projectId: string, commentId: string) => {
+    return api.delete(`/api/bands/${bandId}/projects/${projectId}/comments/${commentId}`);
+  },
 };
 
+// Tasks API
 // Tasks API
 export const tasksAPI = {
   create: async (bandId: string, projectId: string, data: {
@@ -232,6 +268,23 @@ export const tasksAPI = {
   delete: async (bandId: string, projectId: string, taskId: string) => {
     const response = await api.delete(`/api/bands/${bandId}/projects/${projectId}/tasks/${taskId}`);
     return response.data;
+  },
+
+  // Comment functions
+  getComments: (bandId: string, projectId: string, taskId: string) => {
+    return api.get(`/api/bands/${bandId}/projects/${projectId}/tasks/${taskId}/comments`);
+  },
+
+  addComment: (bandId: string, projectId: string, taskId: string, data: { body: string; parentCommentId?: string }) => {
+    return api.post(`/api/bands/${bandId}/projects/${projectId}/tasks/${taskId}/comments`, data);
+  },
+
+  updateComment: (bandId: string, projectId: string, taskId: string, commentId: string, data: { body: string }) => {
+    return api.put(`/api/bands/${bandId}/projects/${projectId}/tasks/${taskId}/comments/${commentId}`, data);
+  },
+
+  deleteComment: (bandId: string, projectId: string, taskId: string, commentId: string) => {
+    return api.delete(`/api/bands/${bandId}/projects/${projectId}/tasks/${taskId}/comments/${commentId}`);
   },
 };
 

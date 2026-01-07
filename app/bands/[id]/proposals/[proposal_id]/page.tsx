@@ -5,6 +5,12 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/lib/authStore';
 import { proposalsAPI, projectsAPI } from '@/lib/api';
+import Button from '@/components/Button';
+import CommentsSection from './components/CommentsSection';
+import ProposalContent from './components/ProposalContent';
+import ProposalSidebar from './components/ProposalSidebar';
+import VoteModal from './components/VoteModal';
+import ReviewModal from './components/ReviewModal';
 
 export default function ProposalDetailPage() {
   const router = useRouter();
@@ -21,32 +27,131 @@ export default function ProposalDetailPage() {
   const [projects, setProjects] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [comments, setComments] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const [showVoteModal, setShowVoteModal] = useState(false);
+  const [voteType, setVoteType] = useState<'approve' | 'reject' | 'abstain'>('approve');
+
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [reviewAction, setReviewAction] = useState<'approve' | 'request_changes'>('approve');
+
   useEffect(() => {
-    // Don't try to load if we're on the "new" proposal page
     if (proposalId === 'new') {
       setLoading(false);
       return;
     }
-    
     loadProposal();
+    loadComments();
   }, [bandId, proposalId]);
 
   const loadProposal = async () => {
-  try {
-    const response = await proposalsAPI.getProposal(bandId, proposalId);
-    setProposal(response.data.proposal);
+    try {
+      const response = await proposalsAPI.getProposal(bandId, proposalId);
+      setProposal(response.data.proposal);
+      
+      const projectsResponse = await projectsAPI.getProjects(bandId);
+      const proposalProjects = projectsResponse.data.projects.filter(
+        (p: any) => p.proposalId === proposalId
+      );
+      setProjects(proposalProjects);
+    } catch (error) {
+      console.error('Failed to load proposal:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadComments = async () => {
+    try {
+      const response = await proposalsAPI.getComments(bandId, proposalId);
+      
+      // Transform comments to match CommentsSection format
+      const transformedComments = response.data.data.comments.map((c: any) => ({
+        id: c.id,
+        body: c.body,
+        createdAt: c.createdAt,
+        author: {
+          displayName: c.creator?.user?.displayName || 'Unknown',
+        },
+        replies: c.replies.map((r: any) => ({
+          id: r.id,
+          body: r.body,
+          createdAt: r.createdAt,
+          author: {
+            displayName: r.creator?.user?.displayName || 'Unknown',
+          },
+        })),
+      }));
+      
+      setComments(transformedComments);
+    } catch (error) {
+      console.error('Failed to load comments:', error);
+    }
+  };
+
+  const handleAddComment = async (body: string) => {
+    try {
+      await proposalsAPI.addComment(bandId, proposalId, { body });
+      loadComments(); // Reload comments
+    } catch (error) {
+      console.error('Failed to add comment:', error);
+      alert('Failed to add comment');
+    }
+  };
+
+  const handleReply = async (commentId: string, body: string) => {
+    try {
+      await proposalsAPI.addComment(bandId, proposalId, { body, parentCommentId: commentId });
+      loadComments(); // Reload comments
+    } catch (error) {
+      console.error('Failed to add reply:', error);
+      alert('Failed to add reply');
+    }
+  };
+
+  const handleEditComment = async (commentId: string, newBody: string) => {
+    try {
+      await proposalsAPI.updateComment(bandId, proposalId, commentId, { body: newBody });
+      loadComments(); // Reload comments
+    } catch (error) {
+      console.error('Failed to edit comment:', error);
+      alert('Failed to edit comment');
+    }
+  };
+
+  const handleEditReply = async (commentId: string, replyId: string, newBody: string) => {
+    try {
+      await proposalsAPI.updateComment(bandId, proposalId, replyId, { body: newBody });
+      loadComments(); // Reload comments
+    } catch (error) {
+      console.error('Failed to edit reply:', error);
+      alert('Failed to edit reply');
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm('Delete this comment?')) return;
     
-    // Load projects for this proposal
-    const projectsResponse = await projectsAPI.getProjects(bandId);
-    const proposalProjects = projectsResponse.data.projects.filter(
-      (p: any) => p.proposalId === proposalId
-    );
-    setProjects(proposalProjects);
-  } catch (error) {
-    console.error('Failed to load proposal:', error);
-  } finally {
-    setLoading(false);
-  }
+    try {
+      await proposalsAPI.deleteComment(bandId, proposalId, commentId);
+      loadComments(); // Reload comments
+    } catch (error) {
+      console.error('Failed to delete comment:', error);
+      alert('Failed to delete comment');
+    }
+  };
+
+  const handleDeleteReply = async (commentId: string, replyId: string) => {
+    if (!confirm('Delete this reply?')) return;
+    
+    try {
+      await proposalsAPI.deleteComment(bandId, proposalId, replyId);
+      loadComments(); // Reload comments
+    } catch (error) {
+      console.error('Failed to delete reply:', error);
+      alert('Failed to delete reply');
+    }
   };
 
   const handleSubmit = async () => {
@@ -61,14 +166,12 @@ export default function ProposalDetailPage() {
     }
   };
 
-  const handleReview = async (action: 'approve' | 'request_changes') => {
-    const feedback = prompt(action === 'approve' ? 'Approval feedback:' : 'What needs to change?');
-    if (!feedback) return;
-
+  const handleReviewSubmit = async (feedback: string) => {
     setReviewing(true);
     try {
-      await proposalsAPI.review(bandId, proposalId, action, feedback);
+      await proposalsAPI.review(bandId, proposalId, reviewAction, feedback);
       await loadProposal();
+      setShowReviewModal(false);
     } catch (error) {
       console.error('Failed to review:', error);
     } finally {
@@ -76,13 +179,12 @@ export default function ProposalDetailPage() {
     }
   };
 
-  const handleVote = async (vote: 'approve' | 'reject' | 'abstain') => {
-    const comment = prompt(`Why are you voting to ${vote}? (optional)`);
-    
+  const handleVoteSubmit = async (comment: string) => {
     setVoting(true);
     try {
-      await proposalsAPI.vote(bandId, proposalId, vote, comment || undefined);
+      await proposalsAPI.vote(bandId, proposalId, voteType, comment || undefined);
       await loadProposal();
+      setShowVoteModal(false);
     } catch (error) {
       console.error('Failed to vote:', error);
       alert('Failed to vote. You may have already voted.');
@@ -93,309 +195,234 @@ export default function ProposalDetailPage() {
 
   const getStateColor = (state: string) => {
     const colors: any = {
-      draft: 'bg-gray-100 text-gray-800',
-      in_review: 'bg-yellow-100 text-yellow-800',
-      needs_revision: 'bg-orange-100 text-orange-800',
-      submitted: 'bg-blue-100 text-blue-800',
-      voting: 'bg-blue-100 text-blue-800',
-      approved: 'bg-green-100 text-green-800',
-      rejected: 'bg-red-100 text-red-800',
-      executed: 'bg-purple-100 text-purple-800',
+      draft: 'bg-earth-100 text-earth-800',
+      in_review: 'bg-brass-light text-brass-dark',
+      needs_revision: 'bg-rust-light text-rust-dark',
+      submitted: 'bg-cyber-100 text-cyber-800',
+      voting: 'bg-rust-light text-rust-dark',
+      approved: 'bg-brass text-white',
+      rejected: 'bg-earth-300 text-earth-900',
+      executed: 'bg-cyber-500 text-white',
     };
-    return colors[state] || 'bg-gray-100 text-gray-800';
+    return colors[state] || 'bg-earth-100 text-earth-800';
   };
+
+  // Filter comments based on search
+  const filteredComments = comments.filter(comment => {
+    if (!searchQuery) return true;
+    const searchLower = searchQuery.toLowerCase();
+    const bodyMatch = comment.body.toLowerCase().includes(searchLower);
+    const authorMatch = comment.author.displayName.toLowerCase().includes(searchLower);
+    const replyMatch = comment.replies?.some((r: any) => 
+      r.body.toLowerCase().includes(searchLower) || 
+      r.author.displayName.toLowerCase().includes(searchLower)
+    );
+    return bodyMatch || authorMatch || replyMatch;
+  });
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-600">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-cream-100">
+        <div className="text-earth-600">Loading...</div>
       </div>
     );
   }
 
   if (!proposal) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-600">Proposal not found</div>
+      <div className="min-h-screen flex items-center justify-center bg-cream-100">
+        <div className="text-earth-600">Proposal not found</div>
       </div>
     );
   }
 
   const userVote = proposal.votes?.find((v: any) => v.member.userId === user?.id);
-  const totalVotes = proposal.votesApprove + proposal.votesReject + proposal.votesAbstain;
+  const currentUserName = user?.displayName || `${user?.firstName} ${user?.lastName}`;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="min-h-screen bg-cream-100">
+      {/* Header with Actions */}
+      <header className="bg-white border-b border-earth-200">
+        <div className="max-w-7xl mx-auto px-8 py-6">
           <Link 
-            href={`/bands/${bandId}`} 
-            className="text-sm text-indigo-600 hover:text-indigo-700 mb-2 inline-block"
+            href={`/bands/${bandId}/proposals`} 
+            className="text-sm text-rust hover:text-rust-dark mb-3 inline-block"
           >
-            ← Back to Band
+            ← Back to Proposals
           </Link>
           
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{proposal.title}</h1>
-              <p className="text-gray-600">
+              <h1 className="text-3xl font-bold text-earth-900 mb-2">{proposal.title}</h1>
+              <p className="text-earth-700">
                 by {proposal.creator.user.displayName || `${proposal.creator.user.firstName} ${proposal.creator.user.lastName}`}
               </p>
             </div>
-            <span className={`px-4 py-2 text-sm font-medium rounded-full ${getStateColor(proposal.state)}`}>
-              {proposal.state.replace('_', ' ').toUpperCase()}
-            </span>
+
+            <div className="flex items-center gap-3">
+              {/* Status Badge */}
+              <span className={`px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap ${getStateColor(proposal.state)}`}>
+                {proposal.state.replace('_', ' ').toUpperCase()}
+              </span>
+
+              {/* Action Buttons */}
+              {proposal.state === 'draft' && (
+                <Button
+                  variant="primary"
+                  onClick={handleSubmit}
+                  loading={submitting}
+                >
+                  Submit for Review
+                </Button>
+              )}
+
+              {proposal.state === 'in_review' && (
+                <div className="flex gap-2">
+                  <Button
+                    variant="primary"
+                    onClick={() => {
+                      setReviewAction('approve');
+                      setShowReviewModal(true);
+                    }}
+                  >
+                    ✓ Approve
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => {
+                      setReviewAction('request_changes');
+                      setShowReviewModal(true);
+                    }}
+                  >
+                    Request Changes
+                  </Button>
+                </div>
+              )}
+
+              {proposal.state === 'voting' && !userVote && (
+                <div className="flex gap-2">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => {
+                      setVoteType('approve');
+                      setShowVoteModal(true);
+                    }}
+                  >
+                    ✓ Approve
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => {
+                      setVoteType('reject');
+                      setShowVoteModal(true);
+                    }}
+                  >
+                    ✗ Reject
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setVoteType('abstain');
+                      setShowVoteModal(true);
+                    }}
+                  >
+                    ⊘ Abstain
+                  </Button>
+                </div>
+              )}
+
+              {proposal.state === 'approved' && (
+                <Button
+                  variant="primary"
+                  href={`/bands/${bandId}/proposals/${proposalId}/create-project`}
+                >
+                  Create Project
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
-      {/* Content */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Objective */}
-            <div className="bg-white rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-3">Objective</h2>
-              <p className="text-gray-700">{proposal.objective}</p>
-            </div>
-
-            {/* Description */}
-            <div className="bg-white rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-3">Description</h2>
-              <p className="text-gray-700 whitespace-pre-wrap">{proposal.description}</p>
-            </div>
-
-            {/* Rationale */}
-            <div className="bg-white rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-3">Rationale</h2>
-              <p className="text-gray-700 whitespace-pre-wrap">{proposal.rationale}</p>
-            </div>
-
-            {/* Success Criteria */}
-            <div className="bg-white rounded-xl p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-3">Success Criteria</h2>
-              <p className="text-gray-700 whitespace-pre-wrap">{proposal.successCriteria}</p>
-            </div>
-
-            {/* Review Feedback */}
-            {proposal.reviewFeedback && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-3">Review Feedback</h2>
-                <p className="text-gray-700">{proposal.reviewFeedback}</p>
-                <p className="text-sm text-gray-500 mt-2">
-                  by {proposal.reviewer?.user.displayName || `${proposal.reviewer?.user.firstName} ${proposal.reviewer?.user.lastName}`}
-                </p>
-              </div>
-            )}
-
-            {/* Votes */}
-            {proposal.votes && proposal.votes.length > 0 && (
-              <div className="bg-white rounded-xl p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Votes ({proposal.votes.length})</h2>
-                <div className="space-y-3">
-                  {proposal.votes.map((vote: any) => (
-                    <div key={vote.id} className="border-b pb-3 last:border-b-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-medium text-gray-900">
-                          {vote.member.user.displayName || `${vote.member.user.firstName} ${vote.member.user.lastName}`}
-                        </span>
-                        <span className={`px-2 py-1 text-xs font-medium rounded ${
-                          vote.vote === 'approve' ? 'bg-green-100 text-green-800' :
-                          vote.vote === 'reject' ? 'bg-red-100 text-red-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {vote.vote}
-                        </span>
-                      </div>
-                      {vote.comment && (
-                        <p className="text-sm text-gray-600">{vote.comment}</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+      {/* Content - 60/40 split */}
+      <main className="max-w-7xl mx-auto px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+          {/* Main Content - 60% */}
+          <div className="lg:col-span-3">
+            <ProposalContent proposal={proposal} />
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Voting Stats */}
-            {proposal.state === 'voting' && (
-              <div className="bg-white rounded-xl p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Voting Results</h3>
-                
-                <div className="space-y-3">
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-green-600 font-medium">Approve</span>
-                      <span className="text-gray-600">{proposal.votesApprove}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-green-500 h-2 rounded-full" 
-                        style={{ width: `${totalVotes > 0 ? (proposal.votesApprove / totalVotes) * 100 : 0}%` }}
-                      />
-                    </div>
-                  </div>
+          {/* Discussion Sidebar - 40% */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Info Card + Sidebar */}
+            <ProposalSidebar
+              proposal={proposal}
+              bandId={bandId}
+              proposalId={proposalId}
+              userVote={userVote}
+              projects={projects}
+              onSubmit={handleSubmit}
+              onReview={(action) => {
+                setReviewAction(action);
+                setShowReviewModal(true);
+              }}
+              onVote={(type) => {
+                setVoteType(type);
+                setShowVoteModal(true);
+              }}
+              submitting={submitting}
+            />
 
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-red-600 font-medium">Reject</span>
-                      <span className="text-gray-600">{proposal.votesReject}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-red-500 h-2 rounded-full" 
-                        style={{ width: `${totalVotes > 0 ? (proposal.votesReject / totalVotes) * 100 : 0}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-gray-600 font-medium">Abstain</span>
-                      <span className="text-gray-600">{proposal.votesAbstain}</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-gray-400 h-2 rounded-full" 
-                        style={{ width: `${totalVotes > 0 ? (proposal.votesAbstain / totalVotes) * 100 : 0}%` }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-sm text-gray-500 mt-4">
-                  Ends: {new Date(proposal.votingEndsAt).toLocaleString()}
-                </p>
+            {/* Discussion Section */}
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+              {/* Search Bar */}
+              <div className="p-4 border-b border-earth-200">
+                <input
+                  type="text"
+                  placeholder="🔍 Search discussions..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-4 py-2 border border-earth-300 rounded-lg focus:ring-2 focus:ring-rust focus:border-transparent outline-none text-sm"
+                />
               </div>
-            )}
 
-            {/* Actions */}
-            <div className="bg-white rounded-xl p-6 space-y-3">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Actions</h3>
-
-              {proposal.state === 'draft' && (
-                <button
-                  onClick={handleSubmit}
-                  disabled={submitting}
-                  className="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-400"
-                >
-                  {submitting ? 'Submitting...' : 'Submit for Review'}
-                </button>
-              )}
-
-              {proposal.state === 'in_review' && (
-                <>
-                  <button
-                    onClick={() => handleReview('approve')}
-                    disabled={reviewing}
-                    className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400"
-                  >
-                    ✓ Approve
-                  </button>
-                  <button
-                    onClick={() => handleReview('request_changes')}
-                    disabled={reviewing}
-                    className="w-full px-4 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 disabled:bg-gray-400"
-                  >
-                    ← Request Changes
-                  </button>
-                </>
-              )}
-
-              {proposal.state === 'voting' && !userVote && (
-                <>
-                  <button
-                    onClick={() => handleVote('approve')}
-                    disabled={voting}
-                    className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400"
-                  >
-                    ✓ Vote Approve
-                  </button>
-                  <button
-                    onClick={() => handleVote('reject')}
-                    disabled={voting}
-                    className="w-full px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400"
-                  >
-                    ✗ Vote Reject
-                  </button>
-                  <button
-                    onClick={() => handleVote('abstain')}
-                    disabled={voting}
-                    className="w-full px-4 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:bg-gray-400"
-                  >
-                    ⊘ Abstain
-                  </button>
-                </>
-              )}
-
-              {userVote && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-sm font-medium text-blue-900">You voted: {userVote.vote}</p>
-                  {userVote.comment && (
-                    <p className="text-sm text-blue-700 mt-1">{userVote.comment}</p>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {proposal.state === 'approved' && (
-  <>
-                {/* Projects List */}
-                {projects.length > 0 && (
-                  <div className="mb-4">
-                    <h3 className="text-sm font-semibold text-gray-900 mb-3">Projects ({projects.length})</h3>
-                    <div className="space-y-2">
-                      {projects.map((project) => (
-                        <Link
-                          key={project.id}
-                          href={`/bands/${bandId}/projects/${project.id}`}
-                          className="block p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
-                        >
-                          <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm font-medium text-gray-900">{project.name}</span>
-                            <span className={`px-2 py-1 text-xs rounded ${
-                              project.status === 'completed' ? 'bg-green-100 text-green-800' :
-                              project.status === 'active' ? 'bg-blue-100 text-blue-800' :
-                              'bg-gray-100 text-gray-800'
-                            }`}>
-                              {project.status}
-                            </span>
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {project.progressPercentage}% complete
-                          </div>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                                      
-                <Link
-                  href={`/bands/${bandId}/proposals/${proposalId}/create-project`}
-                  className="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-center block"
-                >
-                  ✓ Create Project
-                </Link>
-              </>
-            )}
-
-            {/* Info */}
-            <div className="bg-gray-50 rounded-xl p-6 text-sm text-gray-600 space-y-2">
-              <p><strong>Created:</strong> {new Date(proposal.createdAt).toLocaleString()}</p>
-              {proposal.votingStartsAt && (
-                <p><strong>Voting started:</strong> {new Date(proposal.votingStartsAt).toLocaleString()}</p>
-              )}
-              {proposal.financialRequest && (
-                <p><strong>Financial request:</strong> ${Number(proposal.financialRequest).toFixed(2)}</p>
-              )}
+              {/* Comments */}
+              <div className="p-6">
+                <CommentsSection
+                  comments={filteredComments}
+                  currentUserName={currentUserName}
+                  onAddComment={handleAddComment}
+                  onReply={handleReply}
+                  onEditComment={handleEditComment}
+                  onEditReply={handleEditReply}
+                  onDeleteComment={handleDeleteComment}
+                  onDeleteReply={handleDeleteReply}
+                />
+              </div>
             </div>
           </div>
         </div>
       </main>
+
+      {/* Modals */}
+      {showVoteModal && (
+        <VoteModal
+          voteType={voteType}
+          onSubmit={handleVoteSubmit}
+          onClose={() => setShowVoteModal(false)}
+        />
+      )}
+
+      {showReviewModal && (
+        <ReviewModal
+          action={reviewAction}
+          onSubmit={handleReviewSubmit}
+          onClose={() => setShowReviewModal(false)}
+        />
+      )}
     </div>
   );
 }

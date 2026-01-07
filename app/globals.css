@@ -1,7 +1,72 @@
 @import "tailwindcss";
 
+@theme {
+  /* Artisanal Palette - Community colors */
+  --color-rust: #D2691E;
+  --color-rust-light: #E07B3A;
+  --color-rust-dark: #B8551A;
+  
+  --color-brass: #B8860B;
+  --color-brass-light: #D4A829;
+  --color-brass-dark: #9A7109;
+  
+  --color-brown: #5C4033;
+  --color-brown-light: #6E4F40;
+  --color-brown-dark: #4A3329;
+  
+  /* Earth tones - expanded */
+  --color-earth-50: #FAF8F6;
+  --color-earth-100: #F5EEE8;
+  --color-earth-200: #E8DDD1;
+  --color-earth-300: #D4C2B0;
+  --color-earth-400: #A89680;
+  --color-earth-500: #8B7E74;
+  --color-earth-600: #5C4033;
+  --color-earth-700: #4A342A;
+  --color-earth-800: #382821;
+  --color-earth-900: #2C2416;
+  
+  /* Cream backgrounds */
+  --color-cream-50: #FFFFFF;
+  --color-cream-100: #FFF8E7;
+  --color-cream-200: #F5E6D3;
+  --color-cream-300: #E8D4BB;
+  
+  /* Legacy aliases */
+  --color-charcoal: #2C2416;
+  --color-warm-gray: #8B7E74;
+  
+  /* Tech/Sci-Fi Palette - AI and digital features */
+  --color-cyber-50: #F5F3FF;
+  --color-cyber-100: #EDE9FE;
+  --color-cyber-200: #DDD6FE;
+  --color-cyber-300: #C4B5FD;
+  --color-cyber-400: #A78BFA;
+  --color-cyber-500: #8B5CF6;
+  --color-cyber-600: #7C3AED;
+  --color-cyber-700: #6D28D9;
+  --color-cyber-800: #5B21B6;
+  --color-cyber-900: #4C1D95;
+  
+  --color-neon-50: #ECFEFF;
+  --color-neon-100: #CFFAFE;
+  --color-neon-200: #A5F3FC;
+  --color-neon-300: #67E8F9;
+  --color-neon-400: #22D3EE;
+  --color-neon-500: #06B6D4;
+  --color-neon-600: #0891B2;
+  --color-neon-700: #0E7490;
+  --color-neon-800: #155E75;
+  --color-neon-900: #164E63;
+  
+  /* Purple alias for cyber */
+  --color-purple: #8B5CF6;
+  --color-purple-light: #A78BFA;
+  --color-purple-dark: #7C3AED;
+}
+
 :root {
-  /* Brand Colors */
+  /* Brand Colors - CSS variables for custom use */
   --rust-orange: #D2691E;
   --deep-brown: #5C4033;
   --brass-gold: #B8860B;

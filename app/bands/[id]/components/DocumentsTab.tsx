@@ -48,72 +48,72 @@ export default function DocumentsTab({ documents, bandId, onReload }: DocumentsT
     <div>
       {/* Upload section */}
       <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload Document</h3>
+        <h3 className="text-lg font-semibold text-earth-900 mb-4">Upload Document</h3>
         <input
           type="file"
           accept=".pdf,.doc,.docx,.txt,.xlsx,.xls,.csv"
           onChange={handleUpload}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+          className="w-full px-4 py-3 border border-earth-300 rounded-lg focus:ring-2 focus:ring-rust focus:border-transparent"
         />
-        <p className="text-xs text-gray-500 mt-2">Max 10MB. Formats: PDF, DOC, DOCX, TXT, XLSX, XLS, CSV</p>
+        <p className="text-xs text-earth-600 mt-2">Max 10MB. Formats: PDF, DOC, DOCX, TXT, XLSX, XLS, CSV</p>
       </div>
 
       {documents.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-xl">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No documents yet</h3>
-          <p className="text-gray-600">Upload your first document above!</p>
+          <h3 className="text-lg font-medium text-earth-900 mb-2">No documents yet</h3>
+          <p className="text-earth-700">Upload your first document above!</p>
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-earth-200">
+            <thead className="bg-earth-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-earth-600 uppercase tracking-wider">
                   Document
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-earth-600 uppercase tracking-wider">
                   Type
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-earth-600 uppercase tracking-wider">
                   Size
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-earth-600 uppercase tracking-wider">
                   Uploaded By
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-earth-600 uppercase tracking-wider">
                   Date
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-earth-600 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-earth-200">
               {documents.map((doc) => (
                 <tr key={doc.id}>
                   <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-gray-900">{doc.title}</div>
+                    <div className="text-sm font-medium text-earth-900">{doc.title}</div>
                     {doc.description && (
-                      <div className="text-sm text-gray-500">{doc.description}</div>
+                      <div className="text-sm text-earth-600">{doc.description}</div>
                     )}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-earth-600">
                     {doc.fileType.split('/')[1]?.toUpperCase() || 'FILE'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-earth-600">
                     {(doc.fileSize / 1024).toFixed(1)} KB
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-earth-600">
                     {doc.uploader.user.displayName || `${doc.uploader.user.firstName} ${doc.uploader.user.lastName}`}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-earth-600">
                     {new Date(doc.createdAt).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm space-x-3">
                     <a
                       href={`http://localhost:3001${doc.fileUrl}`}
                       download
-                      className="text-indigo-600 hover:text-indigo-900"
+                      className="text-rust hover:text-rust-dark"
                     >
                       Download
                     </a>

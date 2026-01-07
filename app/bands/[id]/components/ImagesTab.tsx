@@ -43,20 +43,20 @@ export default function ImagesTab({ images, bandId, onReload }: ImagesTabProps) 
     <div>
       {/* Upload section */}
       <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Upload Image</h3>
+        <h3 className="text-lg font-semibold text-earth-900 mb-4">Upload Image</h3>
         <input
           type="file"
           accept="image/*"
           onChange={handleUpload}
-          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+          className="w-full px-4 py-3 border border-earth-300 rounded-lg focus:ring-2 focus:ring-rust focus:border-transparent"
         />
-        <p className="text-xs text-gray-500 mt-2">Max 10MB. Formats: JPG, PNG, GIF, WebP</p>
+        <p className="text-xs text-earth-600 mt-2">Max 10MB. Formats: JPG, PNG, GIF, WebP</p>
       </div>
 
       {images.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-xl">
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No images yet</h3>
-          <p className="text-gray-600">Upload your first image above!</p>
+          <h3 className="text-lg font-medium text-earth-900 mb-2">No images yet</h3>
+          <p className="text-earth-700">Upload your first image above!</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -73,12 +73,12 @@ export default function ImagesTab({ images, bandId, onReload }: ImagesTabProps) 
               />
               <div className="p-4">
                 {image.title && (
-                  <h3 className="font-semibold text-gray-900 mb-1">{image.title}</h3>
+                  <h3 className="font-semibold text-earth-900 mb-1">{image.title}</h3>
                 )}
                 {image.description && (
-                  <p className="text-sm text-gray-600 mb-2">{image.description}</p>
+                  <p className="text-sm text-earth-700 mb-2">{image.description}</p>
                 )}
-                <p className="text-xs text-gray-500 mb-3">
+                <p className="text-xs text-earth-600 mb-3">
                   Uploaded by {image.uploader.user.displayName || `${image.uploader.user.firstName} ${image.uploader.user.lastName}`}
                 </p>
                 <button

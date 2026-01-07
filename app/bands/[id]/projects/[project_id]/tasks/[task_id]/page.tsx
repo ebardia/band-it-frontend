@@ -4,20 +4,20 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/lib/authStore';
-import { projectsAPI, tasksAPI, bandsAPI } from '@/lib/api';
+import { tasksAPI, projectsAPI } from '@/lib/api';
 import Button from '@/components/Button';
-import ProjectKanbanBoard from './components/ProjectKanbanBoard';
-import CommentsSection from '../../proposals/[proposal_id]/components/CommentsSection';
+import CommentsSection from '../../../../proposals/[proposal_id]/components/CommentsSection';
 
-export default function ProjectDetailPage() {
+export default function TaskDetailPage() {
   const router = useRouter();
   const params = useParams();
   const bandId = params.id as string;
   const projectId = params.project_id as string;
+  const taskId = params.task_id as string;
   const { user } = useAuthStore();
   
+  const [task, setTask] = useState<any>(null);
   const [project, setProject] = useState<any>(null);
-  const [band, setBand] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const [comments, setComments] = useState<any[]>([]);
@@ -27,17 +27,16 @@ export default function ProjectDetailPage() {
   useEffect(() => {
     loadData();
     loadComments();
-  }, [bandId, projectId]);
+  }, [bandId, projectId, taskId]);
 
   const loadData = async () => {
     try {
-      const [projectResponse, bandResponse] = await Promise.all([
-        projectsAPI.getProject(bandId, projectId),
-        bandsAPI.getBand(bandId),
-      ]);
+      const projectResponse = await projectsAPI.getProject(bandId, projectId);
+      const projectData = projectResponse.data.project;
+      const taskData = projectData.tasks.find((t: any) => t.id === taskId);
       
-      setProject(projectResponse.data.project);
-      setBand(bandResponse.data.Band);
+      setProject(projectData);
+      setTask(taskData);
     } catch (error) {
       console.error('Failed to load data:', error);
     } finally {
@@ -47,7 +46,7 @@ export default function ProjectDetailPage() {
 
   const loadComments = async () => {
     try {
-      const response = await projectsAPI.getComments(bandId, projectId);
+      const response = await tasksAPI.getComments(bandId, projectId, taskId);
       
       // Transform comments to match CommentsSection format
       const transformedComments = response.data.data.comments.map((c: any) => ({
@@ -75,7 +74,7 @@ export default function ProjectDetailPage() {
 
   const handleAddComment = async (body: string) => {
     try {
-      await projectsAPI.addComment(bandId, projectId, { body });
+      await tasksAPI.addComment(bandId, projectId, taskId, { body });
       loadComments(); // Reload comments
     } catch (error) {
       console.error('Failed to add comment:', error);
@@ -85,7 +84,7 @@ export default function ProjectDetailPage() {
 
   const handleReply = async (commentId: string, body: string) => {
     try {
-      await projectsAPI.addComment(bandId, projectId, { body, parentCommentId: commentId });
+      await tasksAPI.addComment(bandId, projectId, taskId, { body, parentCommentId: commentId });
       loadComments(); // Reload comments
     } catch (error) {
       console.error('Failed to add reply:', error);
@@ -95,7 +94,7 @@ export default function ProjectDetailPage() {
 
   const handleEditComment = async (commentId: string, newBody: string) => {
     try {
-      await projectsAPI.updateComment(bandId, projectId, commentId, { body: newBody });
+      await tasksAPI.updateComment(bandId, projectId, taskId, commentId, { body: newBody });
       loadComments(); // Reload comments
     } catch (error) {
       console.error('Failed to edit comment:', error);
@@ -105,7 +104,7 @@ export default function ProjectDetailPage() {
 
   const handleEditReply = async (commentId: string, replyId: string, newBody: string) => {
     try {
-      await projectsAPI.updateComment(bandId, projectId, replyId, { body: newBody });
+      await tasksAPI.updateComment(bandId, projectId, taskId, replyId, { body: newBody });
       loadComments(); // Reload comments
     } catch (error) {
       console.error('Failed to edit reply:', error);
@@ -117,7 +116,7 @@ export default function ProjectDetailPage() {
     if (!confirm('Delete this comment?')) return;
     
     try {
-      await projectsAPI.deleteComment(bandId, projectId, commentId);
+      await tasksAPI.deleteComment(bandId, projectId, taskId, commentId);
       loadComments(); // Reload comments
     } catch (error) {
       console.error('Failed to delete comment:', error);
@@ -129,7 +128,7 @@ export default function ProjectDetailPage() {
     if (!confirm('Delete this reply?')) return;
     
     try {
-      await projectsAPI.deleteComment(bandId, projectId, replyId);
+      await tasksAPI.deleteComment(bandId, projectId, taskId, replyId);
       loadComments(); // Reload comments
     } catch (error) {
       console.error('Failed to delete reply:', error);
@@ -137,7 +136,16 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const handleCompleteTask = async (taskId: string) => {
+  const handleUpdateStatus = async (status: string) => {
+    try {
+      await tasksAPI.update(bandId, projectId, taskId, { status });
+      await loadData();
+    } catch (error) {
+      console.error('Failed to update status:', error);
+    }
+  };
+
+  const handleComplete = async () => {
     try {
       await tasksAPI.complete(bandId, projectId, taskId);
       await loadData();
@@ -146,37 +154,12 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const handleUpdateTaskStatus = async (taskId: string, status: string) => {
-    try {
-      await tasksAPI.update(bandId, projectId, taskId, { status });
-      await loadData();
-    } catch (error) {
-      console.error('Failed to update task:', error);
-    }
-  };
-
-  const handleDeleteProject = async () => {
-    if (!confirm('Delete this project? All tasks will also be deleted. This cannot be undone.')) {
-      return;
-    }
-
-    try {
-      await projectsAPI.delete(bandId, projectId);
-      router.push(`/bands/${bandId}/projects`);
-    } catch (error) {
-      console.error('Failed to delete project:', error);
-      alert('Failed to delete project');
-    }
-  };
-
-  const handleDeleteTask = async (taskId: string) => {
-    if (!confirm('Delete this task? This cannot be undone.')) {
-      return;
-    }
+  const handleDelete = async () => {
+    if (!confirm('Delete this task? This cannot be undone.')) return;
 
     try {
       await tasksAPI.delete(bandId, projectId, taskId);
-      await loadData();
+      router.push(`/bands/${bandId}/projects/${projectId}`);
     } catch (error) {
       console.error('Failed to delete task:', error);
       alert('Failed to delete task');
@@ -185,13 +168,22 @@ export default function ProjectDetailPage() {
 
   const getStatusColor = (status: string) => {
     const colors: any = {
-      planning: 'bg-earth-100 text-earth-800',
-      active: 'bg-rust-light text-rust-dark',
-      on_hold: 'bg-brass-light text-brass-dark',
+      not_started: 'bg-earth-100 text-earth-800',
+      in_progress: 'bg-rust-light text-rust-dark',
+      blocked: 'bg-red-100 text-red-800',
       completed: 'bg-brass text-white',
-      cancelled: 'bg-red-100 text-red-800',
     };
     return colors[status] || 'bg-earth-100 text-earth-800';
+  };
+
+  const getPriorityColor = (priority: string) => {
+    const colors: any = {
+      low: 'bg-earth-100 text-earth-700',
+      medium: 'bg-cyber-100 text-cyber-700',
+      high: 'bg-rust-light text-rust-dark',
+      urgent: 'bg-red-100 text-red-700',
+    };
+    return colors[priority] || 'bg-earth-100 text-earth-700';
   };
 
   const filteredComments = comments.filter(comment => {
@@ -214,10 +206,10 @@ export default function ProjectDetailPage() {
     );
   }
 
-  if (!project) {
+  if (!task) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-cream-100">
-        <div className="text-earth-600">Project not found</div>
+        <div className="text-earth-600">Task not found</div>
       </div>
     );
   }
@@ -230,68 +222,62 @@ export default function ProjectDetailPage() {
       <header className="bg-white border-b border-earth-200">
         <div className="max-w-7xl mx-auto px-8 py-6">
           <Link 
-            href={`/bands/${bandId}/proposals/${project?.proposalId}`} 
+            href={`/bands/${bandId}/projects/${projectId}`} 
             className="text-sm text-rust hover:text-rust-dark mb-3 inline-block"
           >
-            ← Back to Proposal
+            ← Back to Project
           </Link>
           
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1">
-              <h1 className="text-3xl font-bold text-earth-900 mb-2">{project.name}</h1>
-              <p className="text-earth-700 mb-2">From: {project.proposal.title}</p>
-              {project.description && (
-                <p className="text-earth-600">{project.description}</p>
-              )}
+              <div className="flex items-center gap-3 mb-2">
+                <h1 className="text-3xl font-bold text-earth-900">{task.title}</h1>
+                <span className={`px-3 py-1 text-sm font-medium rounded-full ${getPriorityColor(task.priority)}`}>
+                  {task.priority}
+                </span>
+              </div>
+              <p className="text-earth-700">Project: {project?.name}</p>
             </div>
 
             <div className="flex items-center gap-3">
-              <span className={`px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap ${getStatusColor(project.status)}`}>
-                {project.status.replace('_', ' ').toUpperCase()}
+              <span className={`px-4 py-2 text-sm font-medium rounded-full whitespace-nowrap ${getStatusColor(task.status)}`}>
+                {task.status.replace('_', ' ').toUpperCase()}
               </span>
-              
-              <Button
-                variant="primary"
-                href={`/bands/${bandId}/projects/${projectId}/tasks/new`}
-              >
-                + Add Task
-              </Button>
+
+              {task.status === 'not_started' && (
+                <Button variant="primary" onClick={() => handleUpdateStatus('in_progress')}>
+                  Start Task
+                </Button>
+              )}
+
+              {task.status === 'in_progress' && (
+                <>
+                  <Button variant="primary" onClick={handleComplete}>
+                    Mark Complete
+                  </Button>
+                  <Button variant="secondary" onClick={() => handleUpdateStatus('blocked')}>
+                    Block
+                  </Button>
+                </>
+              )}
+
+              {task.status === 'blocked' && (
+                <Button variant="primary" onClick={() => handleUpdateStatus('in_progress')}>
+                  Unblock
+                </Button>
+              )}
               
               <Button
                 variant="secondary"
                 size="sm"
-                href={`/bands/${bandId}/projects/${projectId}/edit`}
+                href={`/bands/${bandId}/projects/${projectId}/tasks/${taskId}/edit`}
               >
                 ✏️ Edit
               </Button>
               
-              <Button
-                variant="danger"
-                size="sm"
-                onClick={handleDeleteProject}
-              >
+              <Button variant="danger" size="sm" onClick={handleDelete}>
                 🗑️
               </Button>
-            </div>
-          </div>
-
-          {/* Progress Bar */}
-          <div className="mt-6">
-            <div className="flex justify-between text-sm mb-2">
-              <span className="text-earth-700 font-medium">Overall Progress</span>
-              <span className="text-earth-900 font-bold">{project.progressPercentage}%</span>
-            </div>
-            <div className="w-full bg-earth-200 rounded-full h-3">
-              <div 
-                className="bg-rust h-3 rounded-full transition-all" 
-                style={{ width: `${project.progressPercentage}%` }}
-              />
-            </div>
-            <div className="flex justify-between text-sm mt-2 text-earth-700">
-              <span>{project.completedTasks} of {project.totalTasks} tasks completed</span>
-              {project.targetDate && (
-                <span>Target: {new Date(project.targetDate).toLocaleDateString()}</span>
-              )}
             </div>
           </div>
         </div>
@@ -300,16 +286,54 @@ export default function ProjectDetailPage() {
       {/* Content - 60/40 split */}
       <main className="max-w-7xl mx-auto px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-          {/* Kanban Board - 60% */}
-          <div className="lg:col-span-3">
-            <ProjectKanbanBoard
-              tasks={project.tasks}
-              bandId={bandId}
-              projectId={projectId}
-              onUpdateStatus={handleUpdateTaskStatus}
-              onComplete={handleCompleteTask}
-              onDelete={handleDeleteTask}
-            />
+          {/* Task Details - 60% */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Description */}
+            {task.description && (
+              <div className="bg-white rounded-xl p-6 shadow-sm">
+                <h2 className="text-lg font-semibold text-earth-900 mb-3">Description</h2>
+                <p className="text-earth-700 whitespace-pre-wrap">{task.description}</p>
+              </div>
+            )}
+
+            {/* Details */}
+            <div className="bg-white rounded-xl p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-earth-900 mb-4">Details</h2>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-earth-600">Status:</span>
+                  <span className="font-medium text-earth-900">{task.status.replace('_', ' ')}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-earth-600">Priority:</span>
+                  <span className="font-medium text-earth-900">{task.priority}</span>
+                </div>
+                {task.assignee && (
+                  <div className="flex justify-between">
+                    <span className="text-earth-600">Assigned to:</span>
+                    <span className="font-medium text-earth-900">
+                      {task.assignee.user.displayName || `${task.assignee.user.firstName} ${task.assignee.user.lastName}`}
+                    </span>
+                  </div>
+                )}
+                {task.dueDate && (
+                  <div className="flex justify-between">
+                    <span className="text-earth-600">Due Date:</span>
+                    <span className="font-medium text-earth-900">{new Date(task.dueDate).toLocaleDateString()}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-earth-600">Created:</span>
+                  <span className="font-medium text-earth-900">{new Date(task.createdAt).toLocaleDateString()}</span>
+                </div>
+                {task.completedAt && (
+                  <div className="flex justify-between">
+                    <span className="text-earth-600">Completed:</span>
+                    <span className="font-medium text-earth-900">{new Date(task.completedAt).toLocaleDateString()}</span>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Discussion Sidebar - 40% */}
@@ -320,19 +344,21 @@ export default function ProjectDetailPage() {
                 onClick={() => setInfoExpanded(!infoExpanded)}
                 className="w-full px-6 py-4 flex items-center justify-between hover:bg-cream-100 transition"
               >
-                <span className="font-semibold text-earth-900">Project Info</span>
+                <span className="font-semibold text-earth-900">Task Info</span>
                 <span className="text-earth-600">{infoExpanded ? '−' : '+'}</span>
               </button>
               
               {infoExpanded && (
                 <div className="px-6 pb-4 text-sm text-earth-700 space-y-2 border-t border-earth-200 pt-4">
-                  <p><strong>Status:</strong> {project.status.replace('_', ' ')}</p>
-                  <p><strong>Progress:</strong> {project.progressPercentage}%</p>
-                  <p><strong>Tasks:</strong> {project.completedTasks}/{project.totalTasks} completed</p>
-                  {project.targetDate && (
-                    <p><strong>Target Date:</strong> {new Date(project.targetDate).toLocaleDateString()}</p>
+                  <p><strong>Project:</strong> {project?.name}</p>
+                  <p><strong>Status:</strong> {task.status.replace('_', ' ')}</p>
+                  <p><strong>Priority:</strong> {task.priority}</p>
+                  {task.assignee && (
+                    <p><strong>Assignee:</strong> {task.assignee.user.displayName || `${task.assignee.user.firstName} ${task.assignee.user.lastName}`}</p>
                   )}
-                  <p><strong>Created:</strong> {new Date(project.createdAt).toLocaleDateString()}</p>
+                  {task.dueDate && (
+                    <p><strong>Due:</strong> {new Date(task.dueDate).toLocaleDateString()}</p>
+                  )}
                 </div>
               )}
             </div>
